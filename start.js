@@ -1,51 +1,197 @@
+/* AXIOS GLOBALS */
+axios.defaults.headers.common['X-Auth-Token'] = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+
+
 // GET REQUEST
 function getTodos() {
-  console.log('GET Request');
+  axios({
+    method: 'get',
+    url: 'https://jsonplaceholder.typicode.com/todos',
+    params: {
+      _limit: 5
+    },
+    timeout: 5000   //ms
+  })
+    // fetch('https://jsonplaceholder.typicode.com/todos/1')
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
+
+  // axios
+  //   .get('https://jsonplaceholder.typicode.com/todos', {
+  //     params: { _limit: 5 },
+  //     timeout: 5000
+  //   })
+  //   .then(res => showOutput(res))
+  //   .catch(err => console.error(err));
 }
 
 // POST REQUEST
 function addTodo() {
-  console.log('POST Request');
+  axios({
+    method: 'post',
+    url: 'https://jsonplaceholder.typicode.com/todos',
+    data: {
+      title: 'New Todo',
+      completed: false
+    }
+  })
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
 }
 
 // PUT/PATCH REQUEST
 function updateTodo() {
-  console.log('PUT/PATCH Request');
+  axios({
+    method: 'put',
+    url: 'https://jsonplaceholder.typicode.com/todos/200',
+    data: {
+      title: 'Updated Todo',
+      completed: true
+    }
+  })
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
 }
 
 // DELETE REQUEST
 function removeTodo() {
-  console.log('DELETE Request');
+  axios({
+    method: 'delete',
+    url: 'https://jsonplaceholder.typicode.com/todos/200'
+  })
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
 }
 
 // SIMULTANEOUS DATA
 function getData() {
-  console.log('Simultaneous Request');
+  axios.all([
+    axios.get('https://jsonplaceholder.typicode.com/todos?_limit=5'),
+    axios.post('https://jsonplaceholder.typicode.com/posts'),
+  ])
+    .then(res => {
+      /* Runs when all requests are fulfilled */
+      console.log(res[0])
+      console.log(res[1])
+      showOutput(res[1])
+    })
+    /* order of parameters (todos, posts) matter */
+    // .then(axios.spread((todos, posts) => showOutput(posts)))
+    .catch(err => console.error(err));
 }
 
 // CUSTOM HEADERS
 function customHeaders() {
-  console.log('Custom Headers');
+  const config = {
+    headers: {
+      'Content-Type': 'application/json',  // Overwrites
+      Authorization: 'sometoken'           // Bearer authorization
+    }
+  }
+
+  axios({
+    method: 'post',
+    url: 'https://jsonplaceholder.typicode.com/todos',
+    data: {
+      title: 'New Todo',
+      completed: false
+    },
+    ...config
+  })
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
 }
 
-// TRANSFORMING REQUESTS & RESPONSES
+// TRANSFORMING REQUESTS & RESPONSES (Not used very much)
 function transformResponse() {
-  console.log('Transform Response');
+  const options = {
+    method: 'post',
+    url: 'https://jsonplaceholder.typicode.com/todos',
+    data: {
+      title: 'Hello World'
+    },
+    transformResponse: axios.defaults.transformResponse.concat(data => {
+      data.title = data.title.toUpperCase();
+      return data;
+    })
+  }
+
+  axios(options)
+    .then(res => showOutput(res))
+    .catch(err => console.error(err));
 }
 
 // ERROR HANDLING
 function errorHandling() {
-  console.log('Error Handling');
+  axios({
+    method: 'get',
+    url: 'https://jsonplaceholder.typicode.com/todosBAD',
+    params: {
+      _limit: 5
+    },
+    // validateStatus: function(status) {
+    //   /* reject server errors (5xx http status code) */
+    //   return status < 500
+    // }
+  })
+    .then(res => showOutput(res))
+    .catch(err => {
+      if (err.response) {
+        // Server responded with a status other than 2xx (Success)
+        console.log(err.response.data)
+        console.log(err.response.status)
+        console.log(err.response.headers)
+
+        if (err.response.status === 404)
+          alert('Error: Page Not Found')
+      } else if (err.request) {
+        // Request was made but no response
+        console.error(err.request)
+      } else {
+        console.error(err.message)
+      }
+    });
 }
 
-// CANCEL TOKEN
+// CANCEL TOKEN (cancel requests on the fly) (Not used much too)
 function cancelToken() {
-  console.log('Cancel Token');
+  const source = axios.CancelToken.source();
+
+  axios({
+    method: 'get',
+    url: 'https://jsonplaceholder.typicode.com/todos',
+    params: {
+      _limit: 5
+    },
+    cancelToken: source.token
+  })
+    .then(res => showOutput(res))
+    .catch(thrown => {
+      if (axios.isCancel(thrown)) {
+        console.log('Request canceled', thrown.message)
+      }
+    });
+
+  if (true) {
+    source.cancel('Request canceled!!!')
+  }
 }
 
 // INTERCEPTING REQUESTS & RESPONSES
+/* Logger for every request */
+axios.interceptors.request.use(config => {
+  console.log(`${config.method.toUpperCase()} request sent to ${config.url} at ${new Date().toISOString()}`)
+  return config
+}, error => {
+  return Promise.reject(error)
+})
 
 // AXIOS INSTANCES
+const axiosInstance = axios.create({
+  baseURL: 'https://jsonplaceholder.typicode.com'
+})
+
+// axiosInstance.get('/comments').then(res => showOutput(res))
 
 // Show output in browser
 function showOutput(res) {
